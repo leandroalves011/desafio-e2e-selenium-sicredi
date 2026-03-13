@@ -1,0 +1,32 @@
+# Build
+build/
+out/
+target/
+
+# Gradle
+.gradle/
+
+# Logs
+*.log
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Allure reports
+allure-results/
+allure-report/
+
+# Screenshots
+screenshots/
+
+# Drivers
+drivers/
+
+# Test artifacts
+test-output/
