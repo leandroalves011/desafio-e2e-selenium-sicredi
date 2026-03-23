@@ -1,47 +1,62 @@
 package core;
 
+import io.github.bonigarcia.wdm.WebDriverManager;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.edge.EdgeDriver;
-import org.openqa.selenium.edge.EdgeOptions;
 import org.openqa.selenium.firefox.FirefoxDriver;
-import org.openqa.selenium.firefox.FirefoxOptions;
+
+import java.time.Duration;
 
 public class DriverFactory {
 
-    private static final String DRIVER_PATH = System.getProperty("user.dir") + "/drivers/";
+    public static WebDriver createDriver() {
 
-    public static WebDriver createDriver(String browser, boolean headless) {
+        String browser =
+                System.getProperty("browser", "chrome");
 
-        switch (browser) {
+        WebDriver driver;
 
-            case "chrome":
-                System.setProperty("webdriver.chrome.driver", DRIVER_PATH + "chromedriver.exe");
-
-                ChromeOptions chromeOptions = new ChromeOptions();
-                if (headless) chromeOptions.addArguments("--headless=new");
-
-                return new ChromeDriver(chromeOptions);
-
-            case "firefox":
-                System.setProperty("webdriver.gecko.driver", DRIVER_PATH + "geckodriver.exe");
-
-                FirefoxOptions firefoxOptions = new FirefoxOptions();
-                if (headless) firefoxOptions.addArguments("-headless");
-
-                return new FirefoxDriver(firefoxOptions);
+        switch (browser.toLowerCase()) {
 
             case "edge":
-                System.setProperty("webdriver.edge.driver", DRIVER_PATH + "msedgedriver.exe");
 
-                EdgeOptions edgeOptions = new EdgeOptions();
-                if (headless) edgeOptions.addArguments("--headless=new");
+                WebDriverManager.edgedriver().setup();
+                driver = new EdgeDriver();
+                break;
 
-                return new EdgeDriver(edgeOptions);
+            case "firefox":
+
+                WebDriverManager.firefoxdriver().setup();
+                driver = new FirefoxDriver();
+                break;
 
             default:
-                throw new RuntimeException("Browser não suportado: " + browser);
+
+                ChromeOptions options = new ChromeOptions();
+
+                String chromeBinary =
+                        System.getenv("CHROME_BINARY");
+
+                if (chromeBinary != null &&
+                        !chromeBinary.isBlank()) {
+
+                    options.setBinary(chromeBinary);
+                }
+
+                options.addArguments("--start-maximized");
+                options.addArguments("--disable-search-engine-choice-screen");
+                options.addArguments("--remote-allow-origins=*");
+
+                WebDriverManager.chromedriver().setup();
+
+                driver = new ChromeDriver(options);
         }
+
+        driver.manage().timeouts().pageLoadTimeout(Duration.ofSeconds(60));
+        driver.manage().timeouts().scriptTimeout(Duration.ofSeconds(30));
+
+        return driver;
     }
 }

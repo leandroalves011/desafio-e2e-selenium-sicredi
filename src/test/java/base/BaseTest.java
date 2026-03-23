@@ -5,27 +5,28 @@ import listeners.TestListener;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebDriver;
 
-import java.time.Duration;
-
 @ExtendWith(TestListener.class)
-public class BaseTest {
+public abstract class BaseTest {
 
-    public static WebDriver driver;
+    protected WebDriver driver;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
 
-        String browser = System.getProperty("browser", "chrome").toLowerCase();
-        boolean headless = Boolean.parseBoolean(System.getProperty("headless", "false"));
+        driver = DriverFactory.createDriver();
 
-        driver = DriverFactory.createDriver(browser, headless);
+        driver.get("https://www.saucedemo.com");
 
-        driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(5));
-        driver.manage().window().maximize();
+        driver.manage().deleteAllCookies();
 
-        driver.get("https://www.saucedemo.com/");
+        ((JavascriptExecutor) driver)
+                .executeScript("window.localStorage.clear();");
+
+        ((JavascriptExecutor) driver)
+                .executeScript("window.sessionStorage.clear();");
     }
 
     @AfterEach
@@ -34,5 +35,9 @@ public class BaseTest {
         if (driver != null) {
             driver.quit();
         }
+    }
+
+    public WebDriver getDriver() {
+        return driver;
     }
 }

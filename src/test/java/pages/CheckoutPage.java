@@ -1,22 +1,13 @@
 package pages;
 
 import org.openqa.selenium.By;
-import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
-import org.openqa.selenium.support.ui.WebDriverWait;
 
-import java.time.Duration;
-
-public class CheckoutPage {
-
-    private WebDriver driver;
-    private WebDriverWait wait;
+public class CheckoutPage extends BasePage {
 
     public CheckoutPage(WebDriver driver) {
-        this.driver = driver;
-        this.wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+        super(driver);
     }
 
     private By firstName = By.cssSelector("[data-test='firstName']");
@@ -26,62 +17,68 @@ public class CheckoutPage {
     private By finishButton = By.cssSelector("[data-test='finish']");
 
     private By summaryContainer = By.id("checkout_summary_container");
-
     private By successMessage = By.className("complete-header");
 
     public void fillForm(String first, String last, String zip) {
 
-        wait.until(ExpectedConditions.visibilityOfElementLocated(firstName)).sendKeys(first);
-        wait.until(ExpectedConditions.visibilityOfElementLocated(lastName)).sendKeys(last);
-        wait.until(ExpectedConditions.visibilityOfElementLocated(postalCode)).sendKeys(zip);
+        wait.until(d -> driver.getCurrentUrl().contains("checkout-step-one"));
 
-        wait.until(ExpectedConditions.elementToBeClickable(continueButton)).click();
+        type(firstName, first);
+        type(lastName, last);
+        type(postalCode, zip);
     }
 
     public boolean isSummaryDisplayed() {
 
-        wait.until(ExpectedConditions.visibilityOfElementLocated(summaryContainer));
-        return driver.getCurrentUrl().contains("checkout-step-two");
+        wait.until(d -> driver.getCurrentUrl().contains("checkout-step-two"));
+
+        wait.until(d -> driver.findElements(summaryContainer).size() > 0);
+
+        return driver.findElements(finishButton).size() > 0;
     }
 
     public void finishPurchase() {
 
-        wait.until(
-                ExpectedConditions.elementToBeClickable(finishButton)
-        ).click();
+        wait.until(ExpectedConditions.elementToBeClickable(finishButton)).click();
+
+        wait.until(ExpectedConditions.urlContains("checkout-complete"));
+
+        wait.until(ExpectedConditions.visibilityOfElementLocated(successMessage));
     }
 
     public String getSuccessMessage() {
 
-        return wait.until(
-                ExpectedConditions.visibilityOfElementLocated(successMessage)
-        ).getText();
+        wait.until(ExpectedConditions.visibilityOfElementLocated(successMessage));
+
+        return driver.findElement(successMessage).getText();
     }
 
-    public void typeFirstName(String name){
+    public void typeFirstName(String name) {
 
-        WebElement field = wait.until(
-                ExpectedConditions.visibilityOfElementLocated(firstName)
+        wait.until(ExpectedConditions.visibilityOfElementLocated(firstName)).clear();
+        driver.findElement(firstName).sendKeys(name);
+    }
+
+    public void typeLastName(String name) {
+
+        wait.until(ExpectedConditions.visibilityOfElementLocated(lastName)).clear();
+        driver.findElement(lastName).sendKeys(name);
+    }
+
+    public String getFirstNameValue() {
+
+        wait.until(ExpectedConditions.visibilityOfElementLocated(firstName));
+
+        return driver.findElement(firstName).getAttribute("value");
+    }
+
+    public void continueCheckout() {
+
+        click(continueButton);
+
+        wait.until(d ->
+                driver.getCurrentUrl().contains("checkout-step-two")
+                        || driver.findElements(By.className("error-message-container")).size() > 0
         );
-
-        field.clear();
-        field.sendKeys(name);
-    }
-
-    public void typeLastName(String name){
-
-        WebElement field = wait.until(
-                ExpectedConditions.visibilityOfElementLocated(lastName)
-        );
-
-        field.clear();
-        field.sendKeys(name);
-    }
-
-    public String getFirstNameValue(){
-
-        return wait.until(
-                ExpectedConditions.visibilityOfElementLocated(firstName)
-        ).getAttribute("value");
     }
 }

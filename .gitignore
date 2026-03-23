@@ -5,6 +5,7 @@ target/
 
 # Gradle
 .gradle/
+gradle.properties
 
 # Logs
 *.log

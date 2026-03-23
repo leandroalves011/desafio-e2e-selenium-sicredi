@@ -2,43 +2,47 @@ package pages;
 
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.support.ui.ExpectedConditions;
-import org.openqa.selenium.support.ui.WebDriverWait;
+import org.openqa.selenium.WebElement;
 
-import java.time.Duration;
+import java.util.List;
 
-public class CartPage {
-
-    private WebDriver driver;
-    private WebDriverWait wait;
+public class CartPage extends BasePage {
 
     public CartPage(WebDriver driver) {
-        this.driver = driver;
-        this.wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+        super(driver);
     }
 
     private By cartItems = By.cssSelector(".cart_item");
-
     private By removeButton = By.cssSelector("[data-test^='remove']");
-
     private By checkoutButton = By.cssSelector("[data-test='checkout']");
+    private By cartContainer = By.id("cart_contents_container");
 
     public int getCartItemCount() {
+
+        waitVisible(cartContainer);
 
         return driver.findElements(cartItems).size();
     }
 
     public void removeItem() {
 
-        wait.until(
-                ExpectedConditions.elementToBeClickable(removeButton)
-        ).click();
+        waitVisible(cartContainer);
+
+        int before = getCartItemCount();
+
+        click(removeButton);
+
+        wait.until(d ->
+                d.findElements(cartItems).size() == Math.max(before - 1, 0)
+        );
     }
 
     public void proceedToCheckout() {
 
-        wait.until(
-                ExpectedConditions.elementToBeClickable(checkoutButton)
-        ).click();
+        click(checkoutButton);
+
+        wait.until(d -> driver.getCurrentUrl().contains("checkout-step-one"));
+
+        wait.until(d -> driver.findElements(By.cssSelector("[data-test='firstName']")).size() > 0);
     }
 }

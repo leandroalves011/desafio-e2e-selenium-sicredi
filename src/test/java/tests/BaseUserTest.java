@@ -19,7 +19,5 @@ public class BaseUserTest extends BaseTest {
 
         pages.loginPage()
                 .login(user.getUsername(), "secret_sauce");
-
     }
-
 }

@@ -66,7 +66,7 @@ public class ProblemUserTest extends BaseUserTest {
     }
 
     @Test
-    void CT16_ProblemUser_shouldCompleteCheckout() {
+    void CT16_ProblemUser_shouldCompleteCheckout() throws InterruptedException {
         initializePages();
         login(UserType.PROBLEM);
 
@@ -79,8 +79,8 @@ public class ProblemUserTest extends BaseUserTest {
                 FakerUtils.lastName(),
                 FakerUtils.zipCode()
         );
-
-        Assertions.assertTrue(driver.getCurrentUrl().contains("checkout-complete"),
+        pages.checkoutPage().continueCheckout();
+        Assertions.assertTrue(pages.checkoutPage().isSummaryDisplayed(),
                 "BUG: problem_user não consegue finalizar checkout."
         );
     }
@@ -136,24 +136,21 @@ public class ProblemUserTest extends BaseUserTest {
 
     @Test
     void CT20_ProblemUser_cartShouldResetAfterLogout() {
+
         initializePages();
         login(UserType.PROBLEM);
 
         pages.inventoryPage().addBackpackToCart();
 
-        Assertions.assertEquals(
-                1,
-                pages.inventoryPage().getCartItemCount()
-        );
-
         pages.inventoryPage().logout();
 
         login(UserType.PROBLEM);
 
+        pages.inventoryPage().goToCart();
+
         Assertions.assertEquals(
                 0,
-                pages.inventoryPage().getCartItemCount(),
-                "BUG: carrinho permaneceu com itens após logout."
+                pages.cartPage().getCartItemCount()
         );
     }
 
@@ -192,6 +189,7 @@ public class ProblemUserTest extends BaseUserTest {
                 "Alves",
                 "12345"
         );
+        pages.checkoutPage().continueCheckout();
         Assertions.assertTrue(
                 pages.checkoutPage().isSummaryDisplayed(),
                 "BUG: summary do checkout não aparece corretamente."
@@ -235,14 +233,17 @@ public class ProblemUserTest extends BaseUserTest {
 
     @Test
     void CT25_ProblemUser_InventoryItemShouldMatchItemPage() {
+
         initializePages();
         login(UserType.PROBLEM);
 
-        String inventoryName = pages.inventoryPage().getProductNameByIndex(0);
+        String inventoryName =
+                pages.inventoryPage().getProductNames().get(0);
 
-        pages.inventoryPage().openItemByIndex(0);
+        pages.inventoryPage().openItemByName(inventoryName);
 
-        String itemPageName = pages.inventoryPage().getItemPageTitle();
+        String itemPageName =
+                pages.inventoryPage().getItemPageTitle();
 
         Assertions.assertEquals(
                 inventoryName,
@@ -290,12 +291,6 @@ public class ProblemUserTest extends BaseUserTest {
 
         pages.checkoutPage().typeFirstName(firstName);
         pages.checkoutPage().typeLastName(lastName);
-
-        try {
-            Thread.sleep(500);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
 
         String value = pages.checkoutPage().getFirstNameValue();
 

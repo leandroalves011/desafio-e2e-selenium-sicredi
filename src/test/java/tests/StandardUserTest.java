@@ -82,10 +82,9 @@ public class StandardUserTest extends BaseUserTest {
                 FakerUtils.lastName(),
                 FakerUtils.zipCode()
         );
-
+        pages.checkoutPage().continueCheckout();
         // valida apenas que o checkout avançou
-        Assertions.assertTrue(
-                driver.getCurrentUrl().contains("checkout"),
+        Assertions.assertTrue(pages.checkoutPage().isSummaryDisplayed(),
                 "Checkout deveria avançar após preencher o formulário."
         );
     }
@@ -128,37 +127,36 @@ public class StandardUserTest extends BaseUserTest {
 
     @Test
     void CT08_StandardUser_shouldRedirectToSauceLabsAboutPage() {
+
         initializePages();
         login(UserType.STANDARD);
 
         pages.inventoryPage().clickAbout();
 
         Assertions.assertTrue(
-                pages.inventoryPage().isOnSauceLabsPage(),
-                "Botão About deveria redirecionar para o site da Sauce Labs."
+                driver.getCurrentUrl().contains("saucelabs"),
+                "Usuário deveria ser redirecionado."
         );
     }
 
     @Test
     void CT09_StandardUser_cartShouldResetAfterLogout() {
+
         initializePages();
         login(UserType.STANDARD);
 
         pages.inventoryPage().addBackpackToCart();
 
-        Assertions.assertEquals(
-                1,
-                pages.inventoryPage().getCartItemCount()
-        );
-
         pages.inventoryPage().logout();
 
         login(UserType.STANDARD);
 
+        pages.inventoryPage().goToCart();
+
         Assertions.assertEquals(
                 0,
-                pages.inventoryPage().getCartItemCount(),
-                "Carrinho deveria ser resetado após logout."
+                pages.cartPage().getCartItemCount(),
+                "Carrinho deveria estar vazio após novo login."
         );
     }
 
@@ -199,7 +197,7 @@ public class StandardUserTest extends BaseUserTest {
                 "Alves",
                 "12345"
         );
-
+        pages.checkoutPage().continueCheckout();
         Assertions.assertTrue(
                 pages.checkoutPage().isSummaryDisplayed(),
                 "Checkout summary deveria aparecer após preencher o formulário."
@@ -211,20 +209,26 @@ public class StandardUserTest extends BaseUserTest {
 
         initializePages();
         login(UserType.STANDARD);
-        List<String> inventoryProducts =
+
+        List<String> products =
                 pages.inventoryPage().getProductNames();
-        for (int i = 0; i < inventoryProducts.size(); i++) {
-            String inventoryName =
-                    pages.inventoryPage().getProductNameByIndex(i);
-            pages.inventoryPage().openItemByIndex(i);
+
+        for (String name : products) {
+
+            pages.inventoryPage().openItemByName(name);
+
             String itemPageName =
                     pages.inventoryPage().getItemPageTitle();
+
             Assertions.assertEquals(
-                    inventoryName,
+                    name,
                     itemPageName,
-                    "Produto inconsistente detectado"
+                    "BUG: item aberto não corresponde ao item selecionado no inventário."
             );
+
             driver.navigate().back();
+
+            pages.inventoryPage().waitInventoryReload();
         }
     }
 

@@ -28,15 +28,15 @@ https://www.saucedemo.com/
 
 ## Tecnologias utilizadas
 
-| Tecnologia               | Finalidade                                                |
-|--------------------------|-----------------------------------------------------------|
-| Java 21                  | Linguagem utilizada na automação                          |
-| Selenium WebDriver       | Automação de navegador                                    |
-| JUnit 5                  | Framework de testes                                       |
-| Gradle                   | Gerenciamento de dependências e build                     |
-| Allure Reports           | Relatórios de execução dos testes                         |
-| Drivers locais (offline) | Execução determinística e independente de conexão na rede |
-| JavaFaker                | Biblioteca para geração dinâmica de massa de dados        |
+| Tecnologia         | Finalidade                                         |
+|--------------------|----------------------------------------------------|
+| Java 21            | Linguagem utilizada na automação                   |
+| Selenium WebDriver | Automação de navegador                             |
+| JUnit 5            | Framework de testes                                |
+| Gradle             | Gerenciamento de dependências e build              |
+| Allure Reports     | Relatórios de execução dos testes                  |
+| WebDriverManager   | Ausência de binários .exe como dependência externa |
+| JavaFaker          | Biblioteca para geração dinâmica de massa de dados |
 
 ---
 
@@ -69,8 +69,7 @@ src
 │    ├── PageManager.java  
 │    └── DriverFactory.java 
 ├── data  
-│    └── TestDataFactory.java  
-│   
+│    └── TestDataFactory.java    
 │  
 ├── listeners  
 │    └── TestListener.java  
@@ -87,9 +86,9 @@ src
 │    └── ProblemUserTest.java  
 │  
 └── utils
-│    ├── FakerUtils.java    
-│    ├── SortOption.java
-│    └── UserType.java    
+     ├── FakerUtils.java    
+     ├── SortOption.java
+     └── UserType.java    
 ```
 
 ### Descrição dos diretórios de testes
@@ -175,15 +174,20 @@ Observação: o projeto utiliza Gradle Wrapper, portanto não é necessário ter
 
 ---
 
-## Execução em navegadores específicos
+## Execução dos testes
 
-### Execução offline utilizando drivers locais
+### Gerenciamento automático de WebDrivers
 
-O framework foi configurado para permitir execução totalmente offline, sem dependência de download automático de WebDrivers.
+O projeto foi refatorado para utilizar WebDriverManager, eliminando a necessidade de versionar binários .exe no repositório.
 
-Os binários dos drivers (Chrome, Firefox e Edge) já estão versionados dentro do projeto.
+Benefícios:
 
-`OBS: Caso ocorra falha na inicialização do navegador, verifique se a versão do driver é compatível com a versão do navegador instalada na máquina.`
+- download automático do driver compatível
+- execução simplificada em qualquer máquina
+- maior portabilidade
+- redução de configuração manual
+
+`Nenhum driver precisa ser instalado previamente.`
 
 Chrome
 ```bash
@@ -199,6 +203,15 @@ Edge
 ```bash
 .\gradlew clean test -Dbrowser=edge
 ```
+### Configuração opcional de ChromeDriver local
+O projeto utiliza o WebDriverManager para gerenciamento automático dos drivers do navegador.
+Pode ocorrer em alguns cenários de testes específicos a incompatibilidade de versão do driver, tendo assim a possibilidade de configurar manualmente o caminho do ChromeDriver através do arquivo:
+`gradle.properties`
+
+Exemplo:
+`chromeDriverPath=C:\\drivers\\chromedriver.exe`
+
+Caso essa configuração não seja necessária, o framework utilizará automaticamente o WebDriverManager.
 
 ---
 
@@ -208,7 +221,7 @@ Edge
 ```
 ---
 
-## Relatórios de execução
+## Relatórios de execução e evidências automáticas de falhas
 
 Após a execução dos testes, os relatórios podem ser gerados utilizando Allure Reports.
 
@@ -221,11 +234,12 @@ Abrir relatório:
 ```bash
 .\gradlew allureServe
 ```
-Durante os testes com falhas devido a bugs, são automaticamente anexados ao relatório:
 
-- screenshot da aplicação
-- URL da página no momento da falha
-- código fonte da página
+Foi implementado um TestListener com Extension API do JUnit 5 que anexam como evidências no Allure Reports, de forma que: 
+
+- captura screenshot automaticamente de testes que resultam em falhas
+- obtem a URL da página no momento da falha
+- exibe o código fonte da página para debug
 
 ---
 
@@ -302,6 +316,13 @@ O padrão Page Object Model foi adotado para separar a lógica de interação co
 
 Essa abordagem permite centralizar os seletores da interface, reutilizar métodos de interação e facilitar manutenção caso a interface da aplicação sofra alterações.
 
+### Estratégia de sincronização (Wait Strategy)
+
+Para evitar anti-pattern do Selenium conforme documentação oficial, foram utilizados somente explicit waits centralizados na `BasePage`.
+
+Tornando a execução mais previsível, performática e sem comportamentos não determinísticos com flaky tests.
+
+
 ### Separação de cenários por tipo de usuário
 
 Os testes foram divididos em duas classes principais: StandardUserTest e ProblemUserTest.
@@ -333,10 +354,8 @@ Esses comportamentos foram mantidos intencionalmente sem tratamento adicional pa
 
 ## Conclusão
 
-A automação desenvolvida valida os fluxos principais da aplicação SauceDemo e identifica inconsistências presentes no sistema.
+A automação desenvolvida valida os fluxos principais da aplicação SauceDemo e identifica inconsistências presentes no sistema. Ou seja, com foco em `diagnóstico técnico real`, sem tratativa para os bugs encontrados.
 
 O projeto foi estruturado utilizando boas práticas de automação de testes, com foco em organização, reutilização de código e clareza na execução dos cenários.
 
 A arquitetura também foi pensada com o intuito de criar um framework de automação de testes de forma que seja fácil de adaptar e implementar para os casos de novos tipos de usuários, novos cenários de testes e futuras alterações no CSS e HTML do site.
-
-A execução multi-browser e em modo headless permitiu validar não apenas o comportamento funcional da aplicação, mas também a robustez e portabilidade do framework de automação.

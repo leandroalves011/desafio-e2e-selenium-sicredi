@@ -4,21 +4,15 @@ import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
-import org.openqa.selenium.support.ui.WebDriverWait;
 import utils.SortOption;
-
-import java.time.Duration;
+import org.openqa.selenium.support.ui.Select;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class InventoryPage {
-
-    private WebDriver driver;
-    private WebDriverWait wait;
+public class InventoryPage extends BasePage {
 
     public InventoryPage(WebDriver driver) {
-        this.driver = driver;
-        this.wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+        super(driver);
     }
 
     private By inventoryContainer = By.id("inventory_container");
@@ -46,12 +40,18 @@ public class InventoryPage {
     private By itemPageAddButton = By.cssSelector("[data-test^='add-to-cart']");
 
     public boolean isInventoryDisplayed() {
-        return driver.findElement(inventoryContainer).isDisplayed();
+
+        waitUrlContains("inventory");
+        waitVisible(inventoryContainer);
+
+        wait.until(d -> driver.findElements(productNames).size() >= 6);
+
+        return true;
     }
 
     public boolean allImagesAreEqual() {
 
-        List<WebElement> images = driver.findElements(productImages);
+        List<WebElement> images = findAll(productImages);
 
         if (images.isEmpty()) return false;
 
@@ -66,50 +66,23 @@ public class InventoryPage {
         return true;
     }
 
-    public void addBackpackToCart() {
-        wait.until(ExpectedConditions.elementToBeClickable(addBackpack)).click();
-    }
-
-    public void addBikeLightToCart() {
-        wait.until(ExpectedConditions.elementToBeClickable(addBikeLight)).click();
-    }
-
-    public void addBoltTShirtToCart() {
-        wait.until(ExpectedConditions.elementToBeClickable(addBoltTShirt)).click();
-    }
-
-    public void addFleeceJacketToCart() {
-        wait.until(ExpectedConditions.elementToBeClickable(addFleeceJacket)).click();
-    }
-
-    public void addOnesieToCart() {
-        wait.until(ExpectedConditions.elementToBeClickable(addOnesie)).click();
-    }
-
-    public void addRedTshirtToCart() {
-        wait.until(ExpectedConditions.elementToBeClickable(addRedTshirt)).click();
-    }
+    public void addBackpackToCart() { click(addBackpack); }
+    public void addBikeLightToCart() { click(addBikeLight); }
+    public void addBoltTShirtToCart() { click(addBoltTShirt); }
+    public void addFleeceJacketToCart() { click(addFleeceJacket); }
+    public void addOnesieToCart() { click(addOnesie); }
+    public void addRedTshirtToCart() { click(addRedTshirt); }
 
     public void removeFirstProductFromCart() {
-        driver.findElement(By.cssSelector("[data-test^='remove']")).click();
-    }
-
-    public void goToCart() {
-        driver.findElement(cartIcon).click();
+        click(By.cssSelector("[data-test^='remove']"));
     }
 
     public int getCartItemCount() {
-
-        List<WebElement> badges = driver.findElements(cartBadge);
-
-        if (badges.isEmpty()) return 0;
-
-        return Integer.parseInt(badges.get(0).getText());
+        return readCartBadge(cartBadge);
     }
 
     public List<String> getProductNames() {
-
-        return driver.findElements(productNames)
+        return findAll(productNames)
                 .stream()
                 .map(WebElement::getText)
                 .collect(Collectors.toList());
@@ -117,20 +90,36 @@ public class InventoryPage {
 
     public void sortProducts(SortOption option) {
 
-        driver.findElement(sortDropdown)
-                .sendKeys(option.getValue());
+        WebElement dropdownEl = waitVisible(sortDropdown);
+
+        Select dropdown = new Select(dropdownEl);
+
+        List<String> before = getProductNames();
+
+        dropdown.selectByVisibleText(option.getValue());
+
+        wait.until(d -> {
+            List<String> after = getProductNames();
+            return !after.equals(before);
+        });
     }
 
     public void logout() {
 
-        driver.findElement(menuButton).click();
-        driver.findElement(logoutLink).click();
+        click(menuButton);
+        waitVisible(logoutLink);
+        click(logoutLink);
+
+        waitVisible(By.id("login-button"));
     }
 
     public void clickAbout() {
 
-        driver.findElement(menuButton).click();
-        driver.findElement(aboutLink).click();
+        click(menuButton);
+        waitVisible(aboutLink);
+        click(aboutLink);
+
+        wait.until(d -> driver.getCurrentUrl().contains("saucelabs"));
     }
 
     public boolean isOnSauceLabsPage() {
@@ -138,18 +127,84 @@ public class InventoryPage {
     }
 
     public void openItemByIndex(int index) {
-        driver.findElements(productNames).get(index).click();
+
+        waitInventoryReload();
+
+        wait.until(d -> driver.findElements(productNames).size() == 6);
+
+        By itemLocator = By.cssSelector("[data-test='inventory-item-name']");
+
+        wait.until(d -> {
+            List<WebElement> items = driver.findElements(itemLocator);
+
+            if (items.size() <= index) return false;
+
+            items.get(index).click();
+
+            return true;
+        });
+
+        wait.until(d ->
+                driver.getCurrentUrl().contains("inventory-item")
+                        || driver.findElements(itemPageTitle).size() > 0
+        );
     }
 
     public void addItemFromItemPage() {
-        driver.findElement(itemPageAddButton).click();
+        click(itemPageAddButton);
     }
 
     public String getProductNameByIndex(int index) {
-        return driver.findElements(productNames).get(index).getText();
+        return findAll(productNames).get(index).getText();
     }
 
     public String getItemPageTitle() {
-        return driver.findElement(itemPageTitle).getText();
+        return waitVisible(itemPageTitle).getText();
+    }
+
+    public void openItemByName(String name) {
+
+        waitInventoryReload();
+
+        wait.until(d -> {
+
+            List<WebElement> items =
+                    driver.findElements(productNames);
+
+            for (WebElement el : items) {
+
+                if (el.getText().equals(name)) {
+
+                    el.click();
+                    return true;
+                }
+            }
+
+            return false;
+
+        });
+
+        wait.until(d ->
+                driver.getCurrentUrl().contains("inventory-item")
+                        || driver.findElements(itemPageTitle).size() > 0
+        );
+    }
+
+    public void waitInventoryReload() {
+
+        waitUrlContains("inventory");
+
+        wait.until(ExpectedConditions.visibilityOfElementLocated(inventoryContainer));
+
+        wait.until(d -> driver.findElements(productNames).size() == 6);
+
+        wait.until(ExpectedConditions.elementToBeClickable(productNames));
+    }
+
+    public void goToCart() {
+
+        click(cartIcon);
+
+        waitVisible(By.id("cart_contents_container"));
     }
 }
